@@ -1,0 +1,6 @@
+{
+  "name": "Servicio de Seguridad",
+  "description": "Aplicación de servicio de seguridad con escáner de teléfono, notificaciones de alertas, auditoría de permisos, información del dispositivo y configuración avanzada.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
