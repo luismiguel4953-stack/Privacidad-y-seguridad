@@ -1,0 +1,59 @@
+name: Build and publish Android release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (for example v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Build release APK
+        run: gradle --no-daemon --stacktrace :app:assembleRelease
+
+      - name: Prepare APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          if [ -z "$apk" ]; then
+            echo 'No release APK was generated.' >&2
+            exit 1
+          fi
+          cp "$apk" "Privacidad-y-seguridad-${{ inputs.version }}.apk"
+
+      - name: Create GitHub Release and attach APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${{ inputs.version }}" \
+            "Privacidad-y-seguridad-${{ inputs.version }}.apk" \
+            --repo "${{ github.repository }}" \
+            --title "Privacidad y seguridad ${{ inputs.version }}" \
+            --notes "## Privacidad y seguridad ${{ inputs.version }}\n\nPrimera versión publicada de la aplicación.\n\n### Incluye\n- Información y diagnóstico de seguridad del dispositivo.\n- Revisión de permisos de aplicaciones instaladas.\n- Comprobaciones de configuración de seguridad y privacidad.\n- Interfaz para consultar posibles riesgos y recomendaciones.\n\nAPK generado automáticamente mediante GitHub Actions." \
+            --latest
